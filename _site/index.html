@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ESP32 Mic</title>
+</head>
+<style>
+</style>
+<body>
+<p>Volume</p>
+<input id="volume" type="range" min="0" max="2" step="0.1" value="1"/>
+<button id="btn_start" onclick="onBtnStart()">Старт</button>
+<script>
+    var gateway = `ws://192.168.0.53:81/`;
+    var websocket;
+    window.addEventListener('load', onLoad);
+
+    var start = false;
+
+    function onBtnStart(){
+        start = !start;
+        if (start){
+            document.getElementById("btn_start").innerHTML = "Стоп";
+            send("start");
+        }else{
+            document.getElementById("btn_start").innerHTML = "Старт";
+            send("stop");
+        }
+    }
+
+
+    function initWebSocket() {
+        console.log('Trying to open a WebSocket connection...');
+        websocket = new WebSocket(gateway);
+        websocket.binaryType = "arraybuffer";
+        websocket.onopen = onOpen;
+        websocket.onclose = onClose;
+        websocket.onmessage = onMessage;
+    }
+
+    function send(cmd) {
+        websocket.send(cmd);
+    }
+
+    function onOpen(event) {
+        console.log('Connection opened');
+    }
+
+    function onClose(ev) {
+        console.log('Connection closed: ');
+        initWebSocket();
+    }
+
+    function onLoad(event) {
+        initWebSocket();
+    }
+
+    function recvTXT(message){
+        console.log(message);
+    }
+
+    function onMessage(event) {
+
+        if (!(event.data instanceof ArrayBuffer)){
+            recvTXT(event.data);
+            return;
+        }
+
+        let buff = new Uint32Array(event.data);
+        //console.log(buff);
+        let vp = 0;
+        for (let i = 0; i < buff.length; i++){
+            let v = buff[i];
+            if (v < 16200000) { ///1670000
+                v = map(v, 0.0, 16200000.0, 0, 50.0);
+                arr.push(v);
+                vp = v;
+            }else{
+                arr.push(vp);
+            }
+        }
+        processor_worklet.port.postMessage({sound: arr});
+        arr = [];
+    }
+
+    var arr = [];
+
+
+    var audioContext = null,
+        gain_node = null,
+        processor_worklet = null,
+        constant = null;
+
+    navigator.mediaDevices.getUserMedia({ audio: true})
+        .then(stream => {
+            init(stream);
+        });
+
+    async function init(stream){
+        audioContext = new AudioContext({
+            latencyHint: 'interactive',
+            sampleRate: 44100,
+        });
+
+        constant = audioContext.createConstantSource();
+        constant.channelCount = 2;
+
+        await audioContext.audioWorklet.addModule('input-processor.js')
+        processor_worklet = new AudioWorkletNode(audioContext, 'input-processor')
+
+        gain_node = audioContext.createGain();
+
+
+
+        constant.connect(processor_worklet)
+        processor_worklet.connect( gain_node );
+        gain_node.connect(audioContext.destination);
+
+
+        await audioContext.resume();
+    }
+
+    function map(value, low, high, low2, high2) {
+        return low2 + (high2 - low2) * ((value - low) / (high - low));
+    }
+
+    document.getElementById('volume').addEventListener('change', function() {
+
+        var curr_volume = this.value;
+        gain_node.gain.value = curr_volume;
+
+        console.log("curr_volume ", curr_volume);
+    });
+
+</script>
+</body>
+</html>
