@@ -130,7 +130,7 @@ esp_err_t i2s_install()
   const i2s_config_t i2s_config = {
       .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = 44100, //44100
-      .bits_per_sample = i2s_bits_per_sample_t(32),
+      .bits_per_sample = i2s_bits_per_sample_t(SAMPLE_BITS),
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // default interrupt priority
@@ -196,24 +196,14 @@ void setup()
 
 void loop()
 {
-  //webSocket.loop();
-  //if (_num != -1)
-  //{
-  /*int32_t sample = 0;
-    int bytes = i2s_pop_sample(I2S_PORT, (char *)&sample, portMAX_DELAY);
-    if (bytes > 0)
-    {
-      //webSocket.sendTXT(_num, String(sample));
-      Serial.printf("Sample: %d\n", sample);
-    }*/
-  //}
   webSocket.loop();
   if (_num != -1)
   {
     size_t bytes_read = 0;
     i2s_read(I2S_PORT, buf, bufLenBytes, &bytes_read, portMAX_DELAY);
     for (int i = 0; i < bufLen; i++){
-      buf[i] = MIC_CONVERT(buf[i]);
+      //buf[i] = MIC_CONVERT(buf[i]);
+      //Serial.println(buf[i]);
     }
     webSocket.sendBIN(_num, (uint8_t*)buf, bufLenBytes);
   }

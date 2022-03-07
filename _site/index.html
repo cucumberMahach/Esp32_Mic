@@ -7,9 +7,14 @@
 <style>
 </style>
 <body>
-<p>Volume</p>
-<input id="volume" type="range" min="0" max="500" step="0.1" value="50"/>
 <button id="btn_start" onclick="onBtnStart()">Старт</button>
+<br>
+<br>
+Volume:
+<input id="volume" type="range" min="0" max="100" step="0.1" value="50"/>
+<br>
+Shift:
+<input id="shift" type="range" min="2" max="7" step="1" value="7"/>
 <br>
 <p>Информация:<span id="memText"></span><button onclick="send('mem')">Обновить</button></p>
 <script>
@@ -38,6 +43,7 @@
         websocket.onopen = onOpen;
         websocket.onclose = onClose;
         websocket.onmessage = onMessage;
+        websocket.onerror = onError;
     }
 
     function send(cmd) {
@@ -54,6 +60,10 @@
         initWebSocket();
     }
 
+    function onError(ev){
+        console.log(ev);
+    }
+
     function onLoad(event) {
         initWebSocket();
     }
@@ -62,6 +72,8 @@
         console.log(message);
         document.getElementById("memText").innerHTML = message;
     }
+
+    var shift = 7;
 
     function onMessage(event) {
 
@@ -74,7 +86,7 @@
         //console.log(buff);
         let vp = 0;
         for (let i = 0; i < buff.length; i++){
-            let v = buff[i];
+            let v = buff[i] >>> shift;
             if (v <= 16700000.0 && v >= 1.0) { ///1670000
                 v = map(v, 1.0, 16700000.0, 0.0, 1.0);
                 arr.push(v);
@@ -88,7 +100,6 @@
     }
 
     var arr = [];
-
 
     var audioContext = null,
         gain_node = null,
@@ -117,7 +128,18 @@
 
 
         constant.connect(processor_worklet)
-        processor_worklet.connect( gain_node );
+        //let filter = audioContext.createBiquadFilter()
+        // Configure filter
+        /*let from = 2500;
+        let to = 10000;
+        let geometricMean = Math.sqrt(from * to);
+
+        filter.type = "bandpass";
+        filter.frequency.value = geometricMean;
+        filter.Q.value = geometricMean / (to - from);*/
+
+        processor_worklet.connect(gain_node)
+        //filter.connect( gain_node );
         gain_node.connect(audioContext.destination);
 
         gain_node.gain.value = document.getElementById('volume').value;
@@ -136,6 +158,10 @@
         gain_node.gain.value = curr_volume;
 
         console.log("curr_volume ", curr_volume);
+    });
+    document.getElementById('shift').addEventListener('change', function() {
+
+        shift = this.value;
     });
 
 </script>
