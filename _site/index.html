@@ -7,7 +7,7 @@
 <style>
 </style>
 <body>
-<button id="btn_start" onclick="onBtnStart()">Старт</button>
+<button id="btn_start" onclick="onBtnStart()">Start</button>
 <br>
 <br>
 Volume:
@@ -16,8 +16,17 @@ Volume:
 Shift:
 <input id="shift" type="range" min="2" max="7" step="1" value="7"/>
 <br>
-<p>Информация:<span id="memText"></span><button onclick="send('mem')">Обновить</button></p>
+<p>Information:<span id="memText"></span><button onclick="send('mem')">Get</button></p>
 <script>
+
+	// Enter the esp32 ip address here, which it will output to the serial port
+	// If you want to use the microphone not only for the address 127.0.0.1, then use my WebsocketService project to create a websocket tunnel with encryption.
+	// To put the same certificate for encryption in this program and on the site page (to accept it on the computer).
+	// Then access will only be over https
+	//
+	// More debug with JS console
+	//
+	
     var gateway = `wss://192.168.0.49:8181/audio`;
     var websocket;
     window.addEventListener('load', onLoad);
@@ -27,10 +36,10 @@ Shift:
     function onBtnStart(){
         start = !start;
         if (start){
-            document.getElementById("btn_start").innerHTML = "Стоп";
+            document.getElementById("btn_start").innerHTML = "Stop";
             send("start");
         }else{
-            document.getElementById("btn_start").innerHTML = "Старт";
+            document.getElementById("btn_start").innerHTML = "Start";
             send("stop");
         }
     }

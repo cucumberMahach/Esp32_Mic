@@ -3,27 +3,27 @@
 #include <WebSocketsServer.h>
 #include <driver/i2s.h>
 
+//====PINS====
 #define I2S_WS 15
 #define I2S_SD 13
 #define I2S_SCK 2
+//============
 
 #define I2S_PORT I2S_NUM_0
-
 #define SAMPLE_BITS 32
-#define MIC_BITS 24
 
-#define MIC_CONVERT(s)    (s >> (SAMPLE_BITS - MIC_BITS))
-
-const char *ssid = "TP-Link_99QM";
-const char *password = "546823398lol9190";
+//====WIFI====
+const char *ssid = "WIFI-SSID";
+const char *password = "WIFI-PASS";
 const char *hostName = "MIC-ST-1";
+//============
 
-int _num = -1;
+int _num = -1; //Websocket client number, -1 = no client
 const int bufLen = 512;
-const int bufLenBytes = bufLen * 4;
+const int bufLenBytes = bufLen * 4; //Bytes to read from i2s
 uint32_t buf[bufLen];
 
-WebSocketsServer webSocket(81);
+WebSocketsServer webSocket(81); //Port = 81
 
 void webSocketEvent(byte num, WStype_t type, uint8_t *payload, size_t length)
 {
@@ -129,7 +129,7 @@ esp_err_t i2s_install()
 {
   const i2s_config_t i2s_config = {
       .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = 44100, //44100
+      .sample_rate = 44100,
       .bits_per_sample = i2s_bits_per_sample_t(SAMPLE_BITS),
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
@@ -199,12 +199,8 @@ void loop()
   webSocket.loop();
   if (_num != -1)
   {
-    size_t bytes_read = 0;
-    i2s_read(I2S_PORT, buf, bufLenBytes, &bytes_read, portMAX_DELAY);
-    for (int i = 0; i < bufLen; i++){
-      //buf[i] = MIC_CONVERT(buf[i]);
-      //Serial.println(buf[i]);
-    }
-    webSocket.sendBIN(_num, (uint8_t*)buf, bufLenBytes);
+    size_t bytes_read = 0; //unused
+    i2s_read(I2S_PORT, buf, bufLenBytes, &bytes_read, portMAX_DELAY); //Read from i2s
+    webSocket.sendBIN(_num, (uint8_t*)buf, bufLenBytes); //Send to client
   }
 }
